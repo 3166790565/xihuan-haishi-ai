@@ -11,6 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Windows 上跑 Python 一律带 `PYTHONUTF8=1`，否则中文源码/输出可能乱码。
 
 ```bash
+# 一键部署（Docker，交互问口令与端口，写 .env 后构建启动）
+./deploy.sh                       # 或 ./deploy.sh --password '...' --port 8000 --yes
+
 # 本地启动（约 8000 端口）
 PYTHONUTF8=1 python -m uvicorn app.main:app --port 8000
 # 前台页面 http://127.0.0.1:8000/ ，后台 http://127.0.0.1:8000/admin

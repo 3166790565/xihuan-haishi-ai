@@ -13,6 +13,8 @@ tests/e2e-result.png
 
 # 本地环境
 .env
+.env.*
+!.env.example
 .venv/
 venv/
 node_modules/

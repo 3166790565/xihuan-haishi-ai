@@ -48,7 +48,7 @@ PYTHONUTF8=1 python -m uvicorn app.main:app --port 8000
 1. 只改引号里的中文，**不要动字段名、不要动 JSON 结构**（这个文件的赋值号右边必须是合法 JSON：字段名带引号、对象里不写注释、末尾不写多余逗号）。
 2. `body` 是字符串数组，一段一个元素，增删段落就是增删元素。
 3. 留空（`""` 或 `[]`）表示该区块不渲染 —— 不会显示占位符。
-4. **改完务必把 `web/index.html` 里 `interpretations.js?v=1` 的数字 +1**，否则线上可能仍是旧缓存。
+4. **改完务必把 `web/index.html` 里 `interpretations.js?v=N` 的数字 +1**，否则线上可能仍是旧缓存。
 
 改题目改 `web/data/questions.js`。三道母题（`role: "anchor"`）有契约校验：如果改动了文字，必须同时在 `normalizedFrom` 里写明理由，否则页面加载时会报契约错误。
 
@@ -62,13 +62,46 @@ PYTHONUTF8=1 python tools/test_scoring.py
 node -e '...'   # 或直接打开页面，校验失败会在页面上明示
 ```
 
-## Docker
+## 一键部署（推荐）
+
+把源码放到服务器上任意目录（例如 `/opt/lovequiz`），然后：
 
 ```bash
+cd /opt/lovequiz
+./deploy.sh
+```
+
+脚本会问两件事：**对外端口**（默认 8000）和**后台登录口令**（至少 8 位，输入不回显）。
+其余它自己做：生成 `SECRET_KEY`、写 `.env`（权限 600）、检查端口占用、构建镜像、启动容器、轮询 `/healthz`。
+
+非交互模式（便于重跑和自动化）：
+
+```bash
+./deploy.sh --password '你的口令' --port 8000 --yes
+```
+
+| 选项 | 说明 |
+|---|---|
+| `--password <口令>` | 后台登录口令；不给则交互询问 |
+| `--port <端口>` | 宿主机对外端口，默认 8000 |
+| `-y, --yes` | 非交互，缺项用默认值或自动生成 |
+| `--no-build` | 跳过构建，用已有镜像启动 |
+| `-h, --help` | 帮助 |
+
+重复执行是安全的：已有 `.env` 会作为默认值并沿用 `SECRET_KEY`，容器就地重建，`/data` 卷里的 SMTP 配置与限流计数不受影响。
+
+> **注意**：`ADMIN_PASSWORD` 只是**初始口令**。`/data` 里已经存过口令时，新口令不会覆盖旧的，后台仍用旧口令登录。
+> 真要换口令，得 `docker compose down -v` 清空数据卷——SMTP 配置和限流计数会一起没。
+
+### 手动方式
+
+```bash
+echo "ADMIN_PASSWORD='你的口令'" > .env
+echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
 docker compose up -d --build
 ```
 
-或手动：
+或完全不用 compose：
 
 ```bash
 docker build -t lovequiz .

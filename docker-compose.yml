@@ -3,7 +3,8 @@ services:
     build: .
     image: lovequiz:latest
     ports:
-      - "8000:8000"
+      # 宿主机端口由 .env 的 HOST_PORT 决定（deploy.sh 会写），容器内固定 8000。
+      - "${HOST_PORT:-8000}:8000"
     environment:
       # 后台登录口令。不设置则后台整体禁用（/admin 返回 503），不会默认放行。
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:?请先设置 ADMIN_PASSWORD 环境变量}"
