@@ -125,8 +125,8 @@
       el("from_addr").value=c.from_addr||"";
       el("from_name").value=c.from_name||"";
       var rate=d.rate||{};
-      el("rate").innerHTML="今日已发：<b>"+rate.today_total+"</b> / "+rate.daily_limit+
-        "　·　按 IP 上限："+rate.ip_daily_limit+"　·　按收件上限："+rate.to_daily_limit;
+      el("rate").innerHTML="今日已发：<b>"+rate.total_used+"</b> / "+rate.total_limit+
+        "　·　按 IP 上限："+rate.ip_limit+"　·　按收件上限："+rate.to_limit;
     }).catch(function(){});
   }
 
