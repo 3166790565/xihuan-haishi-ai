@@ -137,6 +137,27 @@
     filled.videoQuotes = vq.length;
     if (vq.length === 0) warnings.push("video.paragraphs 为空：视频出处区整块不渲染");
 
+    // 参考文献区：纯展示，缺了只是不渲染；但若给了非字符串条目，渲染会显示 [object Object]。
+    var refs = texts.references;
+    if (refs) {
+      ["sources", "list"].forEach(function (key) {
+        var items = refs[key];
+        if (items === undefined) return;
+        if (!Array.isArray(items)) {
+          errors.push("references." + key + " 必须是字符串数组");
+          return;
+        }
+        items.forEach(function (x, i) {
+          if (!isNonEmptyString(x)) errors.push("references." + key + "[" + i + "] 不是非空字符串");
+        });
+      });
+      if (!isNonEmptyString(refs.title) && (Array.isArray(refs.sources) || Array.isArray(refs.list))) {
+        warnings.push("references.title 缺失：文献区会整块不渲染");
+      }
+    } else {
+      warnings.push("references 缺失：结果页不显示参考文献与参考来源");
+    }
+
     REQUIRED_DIMS.forEach(function (d) {
       var dd = (texts.dims || {})[d];
       if (!dd || !isNonEmptyString(dd.name)) errors.push("dims." + d + ".name 缺失");

@@ -415,6 +415,9 @@
     var vid = renderVideo();
     if (vid) { host.appendChild(el("hr")); host.appendChild(vid); }
 
+    var refs = renderReferences();
+    if (refs) { host.appendChild(el("hr")); host.appendChild(refs); }
+
     var foot = el("div", "foot");
     addIf(foot, el("p"), notice.disclaimer);
     addIf(foot, el("p"), R.footer);
@@ -665,6 +668,42 @@
       any = true;
     }
     return any ? wrap : null;
+  }
+
+  function renderReferences() {
+    var refs = obj(T("references"));
+    if (!refs) return null;
+    var sources = arr(refs.sources);
+    var list = arr(refs.list);
+    if (!sources && !list) return null;
+
+    var wrap = el("section", "sec");
+    addIf(wrap, el("h3", "sec-title"), refs.title);
+    addIf(wrap, el("p", "video-note"), refs.note);
+
+    if (sources) {
+      var sub = el("div", "refs-group");
+      addIf(sub, el("h4", "refs-sub"), refs.sourcesTitle);
+      var ul = el("ul", "refs-list");
+      for (var i = 0; i < sources.length; i++) {
+        addIf(ul, el("li"), sources[i]);
+      }
+      if (ul.firstChild) sub.appendChild(ul);
+      if (sub.firstChild) wrap.appendChild(sub);
+    }
+
+    if (list) {
+      var sub2 = el("div", "refs-group");
+      addIf(sub2, el("h4", "refs-sub"), refs.listTitle);
+      var ol = el("ul", "refs-list refs-cite");
+      for (var j = 0; j < list.length; j++) {
+        addIf(ol, el("li"), list[j]);
+      }
+      if (ol.firstChild) sub2.appendChild(ol);
+      if (sub2.firstChild) wrap.appendChild(sub2);
+    }
+
+    return wrap.firstChild ? wrap : null;
   }
 
   /* ---------------- copy to clipboard ---------------- */

@@ -646,6 +646,25 @@ button {
 
 .vp p { margin: 0; font-size: 0.9375rem; color: var(--ink-soft); line-height: 1.75; }
 
+/* 参考文献 / 参考来源 */
+.refs-group { margin-top: 1.15rem; }
+.refs-sub {
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+.refs-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+}
+.refs-list li + li { margin-top: 0.55rem; }
+.refs-cite li { word-break: break-word; }
+
 /* 尾部 */
 .foot {
   font-size: 0.8125rem;

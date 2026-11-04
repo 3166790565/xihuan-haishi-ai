@@ -310,6 +310,21 @@ def _headline(result: dict[str, Any], texts: dict[str, Any]) -> str:
     return ""
 
 
+def _references(texts: dict[str, Any]) -> tuple[str, list[str], list[str]]:
+    """参考文献区：返回 (标题, 参考来源, 文献条目)。缺字段就返回空，不编句子。
+
+    条目都是纯文本，渲染时统一 _esc()；DOI 写成 "DOI: ..." 而不是 URL，
+    保持「正文不含可点击外链」这条设计约束。
+    """
+    refs = texts.get("references") or {}
+    if not isinstance(refs, dict):
+        return "", [], []
+    title = str(refs.get("title") or "").strip()
+    sources = [str(x).strip() for x in (refs.get("sources") or []) if str(x).strip()]
+    items = [str(x).strip() for x in (refs.get("list") or []) if str(x).strip()]
+    return title, sources, items
+
+
 def _disclaimer(texts: dict[str, Any]) -> str:
     notice = texts.get("notice") or {}
     result = texts.get("result") or {}
@@ -381,6 +396,24 @@ def build_result_html(
     # 主题走纯文本通道（Header 编码），所以用已经剥掉尖括号的 plain_alias
     subject = f"喜欢还是爱｜对 {plain_alias} 而言：{name}"
 
+    refs_title, ref_sources, ref_items = _references(texts)
+    li_sources = "\n".join(f'      <li>{_esc(x)}</li>' for x in ref_sources)
+    li_refs = "\n".join(f'      <li>{_esc(x)}</li>' for x in ref_items)
+    refs_html = ""
+    if refs_title and (ref_sources or ref_items):
+        groups = ""
+        if ref_sources:
+            groups += (f'    <div style="font-size:12px;color:#8a8577;margin:0 0 6px">参考来源</div>\n'
+                       f'    <ul style="margin:0 0 14px;padding-left:20px;font-size:13px;color:#4a4639">\n'
+                       f'{li_sources}\n    </ul>\n')
+        if ref_items:
+            groups += (f'    <div style="font-size:12px;color:#8a8577;margin:0 0 6px">参考文献</div>\n'
+                       f'    <ul style="margin:0 0 0;padding-left:20px;font-size:12px;color:#4a4639;'
+                       f'word-break:break-word">\n{li_refs}\n    </ul>\n')
+        refs_html = (f'    <hr style="border:0;border-top:1px solid #eee8db;margin:22px 0">\n'
+                     f'    <h2 style="font-size:14px;margin:0 0 8px;color:#5d5849">{_esc(refs_title)}</h2>\n'
+                     f'{groups}')
+
     # ------- HTML -------
     li_dim = "\n".join(
         f'      <tr><td>{_esc(label)}</td><td style="text-align:right">{int(value)}/{_esc(per_dim)}</td>'
@@ -421,7 +454,7 @@ def build_result_html(
     <p style="font-size:13px;color:#5d5849;margin:0 0 8px">{_esc(borderline_text)}</p>
     <p style="font-size:13px;color:#5d5849;margin:0 0 8px">本次总分 {_esc(result.get("total", ""))} / 9</p>
     <p style="font-size:13px;color:#5d5849;margin:0 0 18px">版本 {str(_esc(result.get("version", "")))}</p>
-    <div style="background:#f3f1ea;border-radius:8px;padding:14px 16px;font-size:13px;color:#4a4639">
+{refs_html}    <div style="background:#f3f1ea;border-radius:8px;padding:14px 16px;font-size:13px;color:#4a4639">
       {_esc(_disclaimer(texts))}
     </div>
     <p style="font-size:12px;color:#9a9484;margin:16px 0 0">
@@ -449,7 +482,14 @@ def build_result_html(
         plain_lines.append(f"  {'*' if hit else '-'} {shown}{'　◀ 你在这里' if hit else ''}")
     if borderline_text:
         plain_lines += ["", borderline_text]
-    plain_lines += ["", f"本次总分 {result.get('total', '')} / 9", "", _disclaimer(texts), "",
+    plain_lines += ["", f"本次总分 {result.get('total', '')} / 9"]
+    if refs_title and (ref_sources or ref_items):
+        plain_lines += ["", refs_title]
+        if ref_sources:
+            plain_lines += ["参考来源"] + [f"  - {x}" for x in ref_sources]
+        if ref_items:
+            plain_lines += ["参考文献"] + [f"  - {x}" for x in ref_items]
+    plain_lines += ["", _disclaimer(texts), "",
                     "这封邮件由你在「喜欢还是爱」页面上主动请求发送。"
                     "服务器不留存你的答案，也不包含任何需要登录或点击的链接。"]
     plain_body = "\n".join(plain_lines) + "\n"
