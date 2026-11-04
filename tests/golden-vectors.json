@@ -1,0 +1,132 @@
+{
+  "_comment": [
+    "判定回归表 —— 分两类断言，性质不同，不要混为一谈：",
+    "",
+    "【设计断言】expect.typeKey / expect.verdict：",
+    "  来自 博客.mp4 的八分法（02:41「除此之外全部是爱」）与在场阈值定义，",
+    "  是人可能在设计层面搞错的东西（比如把缺亲密的三种误判成「不算爱」），",
+    "  所以逐条人工钉死。tools/test_scoring.py 直接核对，两份实现都必须服从这里。",
+    "",
+    "【机械字段】borderlineDims / keyQuestionIds / confidence：",
+    "  「得分 ∈ {阈值-1, 阈值}」「翻这题重算、结论桶变不变」是纯算术。人工推 9 次翻题",
+    "  只会出错、不会更有原则（本项目第一版就在这两处算错过），所以这里不写期望值，",
+    "  改由 tools/test_scoring.py 里的第三个独立实现按英文定义直接重算，",
+    "  再与 web/scoring.js、app/scoring.py 三方对撞；同时穷举全部 2^9=512 种向量要求两份实现完全一致。",
+    "",
+    "threshold=2：维度得分 >=2 才算该成分在场。sprout 的关键题按约定为空（见 scoring.js 注释）。",
+    "reject 段：这些输入必须被 validate_answers 拒绝 —— 后端靠它做请求合法性校验，不能静默当 0。"
+  ],
+
+  "cases": [
+    {
+      "id": "V01",
+      "why": "否否否 → 既不喜欢也不爱（博主的早餐店类比，01:59）",
+      "answers": { "I1": 0, "I2": 0, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "nonlove", "verdict": "none" }
+    },
+    {
+      "id": "V02",
+      "why": "是是是 → 完满之爱（07:31）",
+      "answers": { "I1": 1, "I2": 1, "I3": 1, "P1": 1, "P2": 1, "P3": 1, "C1": 1, "C2": 1, "C3": 1 },
+      "expect": { "typeKey": "consummate", "verdict": "love" }
+    },
+    {
+      "id": "V03",
+      "why": "★本测试的核心判别：只有亲密在场 → 喜欢，但不是爱（02:16）。这一条判错整个产品就没意义了",
+      "answers": { "I1": 1, "I2": 1, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "liking", "verdict": "like" }
+    },
+    {
+      "id": "V04",
+      "why": "只有激情在场 → 迷恋之爱，且按博主口径必须归为「是爱」（02:51）。盯 TYPE_BY_BITS 镜像：下标 2 = infatuation",
+      "answers": { "I1": 0, "I2": 0, "I3": 0, "P1": 1, "P2": 1, "P3": 1, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "infatuation", "verdict": "love" }
+    },
+    {
+      "id": "V05",
+      "why": "只有承诺在场 → 空洞之爱，是爱（04:37）。盯 TYPE_BY_BITS 镜像：下标 1 = empty，不是 liking",
+      "answers": { "I1": 0, "I2": 0, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 1, "C2": 1, "C3": 1 },
+      "expect": { "typeKey": "empty", "verdict": "love" }
+    },
+    {
+      "id": "V06",
+      "why": "亲密+承诺、无激情 → 伴侣之爱（博主自己说这是他理想中的状态，05:47）",
+      "answers": { "I1": 1, "I2": 1, "I3": 1, "P1": 0, "P2": 0, "P3": 0, "C1": 1, "C2": 1, "C3": 0 },
+      "expect": { "typeKey": "companionate", "verdict": "love" }
+    },
+    {
+      "id": "V07",
+      "why": "亲密+激情、无承诺 → 浪漫之爱（短择，03:15）。第三题选否不等于不爱，这是博主专门论证过的（03:40–04:19）",
+      "answers": { "I1": 1, "I2": 0, "I3": 1, "P1": 1, "P2": 1, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "romantic", "verdict": "love" }
+    },
+    {
+      "id": "V08",
+      "why": "激情+承诺、缺亲密 → 冲动之爱，仍归为爱（06:25）。盯 TYPE_BY_BITS 下标 3",
+      "answers": { "I1": 0, "I2": 0, "I3": 0, "P1": 1, "P2": 1, "P3": 1, "C1": 1, "C2": 1, "C3": 0 },
+      "expect": { "typeKey": "fatuous", "verdict": "love" }
+    },
+    {
+      "id": "V09",
+      "why": "★母题独占（I1/P1/C1 各是，其余全否）→ 三维各 1 分 → 萌芽/混合期，难判。三题制里这个向量不存在，是九题制的信息上限；同时也证明「只靠母题答是」不足以得出任何结论，扩题摊薄偶然性生效",
+      "answers": { "I1": 1, "I2": 0, "I3": 0, "P1": 1, "P2": 0, "P3": 0, "C1": 1, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "sprout", "verdict": "mixed" }
+    },
+    {
+      "id": "V10",
+      "why": "I=1,P=2,C=0：亲密差一题不在场、激情在场 → 迷恋之爱。临界维度不该被当成在场（V03/V11 是反向对照）",
+      "answers": { "I1": 1, "I2": 0, "I3": 0, "P1": 1, "P2": 1, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "infatuation", "verdict": "love" }
+    },
+    {
+      "id": "V11",
+      "why": "I=2,P=1,C=0 → 喜欢成立，但激情差一题就翻成爱（临界与关键题由机械校验覆盖）",
+      "answers": { "I1": 1, "I2": 1, "I3": 0, "P1": 1, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "liking", "verdict": "like" }
+    },
+    {
+      "id": "V12",
+      "why": "在场维度里答否的题：I=3 翻 I3 得 (2,2,1) 仍是爱 —— 用于核对关键题不会无脑扩大",
+      "answers": { "I1": 1, "I2": 1, "I3": 1, "P1": 1, "P2": 0, "P3": 1, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "romantic", "verdict": "love" }
+    },
+    {
+      "id": "V13",
+      "why": "只有一个「是」（I1）：三维分别 1/0/0，不满足各维 1 → 无爱，不是 sprout（sprout 要求三个维度同时为 1）",
+      "answers": { "I1": 1, "I2": 0, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "nonlove", "verdict": "none" }
+    },
+    {
+      "id": "V14",
+      "why": "I=3,P=2,C=0 → 浪漫之爱：亲密与激情都满格在场",
+      "answers": { "I1": 1, "I2": 1, "I3": 1, "P1": 1, "P2": 1, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+      "expect": { "typeKey": "romantic", "verdict": "love" }
+    },
+    {
+      "id": "V15",
+      "why": "I=0,P=3,C=2 → 冲动之爱（亲密完全缺席也仍是爱，博主口径）",
+      "answers": { "I1": 0, "I2": 0, "I3": 0, "P1": 1, "P2": 1, "P3": 1, "C1": 1, "C2": 1, "C3": 0 },
+      "expect": { "typeKey": "fatuous", "verdict": "love" }
+    },
+    {
+      "id": "V16",
+      "why": "I=2,P=0,C=3 → 伴侣之爱：承诺满格但激情零分，仍是爱",
+      "answers": { "I1": 1, "I2": 1, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 1, "C2": 1, "C3": 1 },
+      "expect": { "typeKey": "companionate", "verdict": "love" }
+    }
+  ],
+
+  "reject": {
+    "_comment": "必须被 validate_answers 拒绝的输入（缺题、非法值、bool 冒充 0/1）",
+    "missing_one": { "I1": 1, "I2": 1, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0 },
+    "illegal_half": { "I1": 1, "I2": 1, "I3": 0.5, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+    "bool_value": { "I1": true, "I2": 1, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0 },
+    "not_object": "I1=1"
+  },
+
+  "tolerated": {
+    "_comment": "多余字段应被忽略而不是报错（前端多传字段不该让发信失败）",
+    "extra_key": { "I1": 1, "I2": 1, "I3": 0, "P1": 0, "P2": 0, "P3": 0, "C1": 0, "C2": 0, "C3": 0, "XX9": 1 },
+    "expect": { "typeKey": "liking", "verdict": "like" }
+  }
+}

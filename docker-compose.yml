@@ -1,0 +1,21 @@
+services:
+  lovequiz:
+    build: .
+    image: lovequiz:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # 后台登录口令。不设置则后台整体禁用（/admin 返回 503），不会默认放行。
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?请先设置 ADMIN_PASSWORD 环境变量}"
+      # 会话签名密钥。不设置则每次启动随机生成（重启后所有人需要重新登录后台）。
+      SECRET_KEY: "${SECRET_KEY:-}"
+      DATA_DIR: "/data"
+      # 云端若注入 $PORT，容器内监听端口会跟着变；这里映射仍是 8000。
+      PORT: "8000"
+    volumes:
+      # 配置（含 SMTP 授权码）与限流计数持久化在命名卷里。
+      - lovequiz-data:/data
+    restart: unless-stopped
+
+volumes:
+  lovequiz-data:

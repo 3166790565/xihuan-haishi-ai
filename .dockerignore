@@ -1,0 +1,16 @@
+# 不要把构建上下文撑大：开发期的一次性工具与测试不进镜像。
+tools/
+tests/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+data/
+*.wav
+*.md
+!README.md
+!DEPLOY.md
+.env
+.venv/
+node_modules/
+_selfcheck.js

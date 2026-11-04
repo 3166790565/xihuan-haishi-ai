@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>后台 · 喜欢还是爱</title>
+<style>
+  :root{--bg:#faf6ef;--ink:#2b2622;--muted:#8a7f74;--line:#e4dccc;--accent:#8f3b34;--ok:#2e7d52;--bad:#b23b3b}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;padding:24px}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-family:Georgia,"Songti SC",serif;font-weight:400;font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:.85rem;margin-bottom:24px}
+  section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px}
+  label{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font-size:.95rem;background:#fff}
+  input:focus{outline:none;border-color:var(--accent)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:10px 18px;font-size:.95rem;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .note{font-size:.78rem;color:var(--muted)}
+  .msg{margin-top:12px;padding:10px 12px;border-radius:6px;font-size:.9rem}
+  .msg.ok{background:#eaf5ee;color:var(--ok)} .msg.bad{background:#f7eaea;color:var(--bad)}
+  .stat{display:inline-block;margin-right:16px;font-size:.82rem;color:var(--muted)}
+  .stat b{color:var(--ink)}
+  #rate{font-size:.82rem;color:var(--muted);margin-top:8px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>后台 · 喜欢还是爱</h1>
+  <div class="sub">配置发信邮箱 · 查看限流状态 · 发测试邮件</div>
+
+  <section id="login-view">
+    <h2 style="margin-top:0">登录</h2>
+    <label for="pw">管理员口令</label>
+    <input id="pw" type="password" placeholder="ADMIN_PASSWORD">
+    <div style="margin-top:14px"><button id="btn-login">登录</button></div>
+    <div id="login-msg"></div>
+  </section>
+
+  <div id="app-view" class="hidden">
+
+    <section>
+      <h2 style="margin-top:0">状态</h2>
+      <div>
+        <span class="stat">后台：<b id="st-enabled">—</b></span>
+        <span class="stat">发信就绪：<b id="st-ready">—</b></span>
+      </div>
+      <div id="rate"></div>
+    </section>
+
+    <section>
+      <h2 style="margin-top:0">SMTP 发信配置</h2>
+      <div class="row">
+        <div><label for="smtp_host">服务器</label><input id="smtp_host" placeholder="smtp.qq.com"></div>
+        <div><label for="smtp_port">端口</label><input id="smtp_port" placeholder="465 或 587"></div>
+      </div>
+      <div class="row">
+        <div><label for="smtp_security">加密方式</label>
+          <select id="smtp_security"><option value="ssl">SSL（通常 465）</option><option value="starttls">STARTTLS（通常 587）</option><option value="none">无加密（不推荐）</option></select>
+        </div>
+        <div><label for="smtp_user">账号 / 用户名</label><input id="smtp_user" placeholder="完整邮箱或授权码用户名"></div>
+      </div>
+      <label for="smtp_password">密码 / 授权码</label>
+      <input id="smtp_password" type="password" placeholder="留空则不改；填 **** 会保留原密码">
+      <div class="note">QQ / 163 等邮箱需要「授权码」而不是登录密码。填 **** 表示保留原密码不动。</div>
+      <div class="row" style="margin-top:8px">
+        <div><label for="from_addr">发件地址</label><input id="from_addr" placeholder="与账号一致的邮箱"></div>
+        <div><label for="from_name">发件人显示名</label><input id="from_name" placeholder="喜欢还是爱"></div>
+      </div>
+      <div style="margin-top:16px"><button id="btn-save">保存配置</button></div>
+      <div id="save-msg"></div>
+    </section>
+
+    <section>
+      <h2 style="margin-top:0">发一封测试邮件</h2>
+      <label for="test_to">收件邮箱（建议填你自己的）</label>
+      <input id="test_to" placeholder="you@example.com">
+      <div style="margin-top:14px"><button id="btn-test">发送测试邮件</button></div>
+      <div id="test-msg"></div>
+    </section>
+
+    <section>
+      <h2 style="margin-top:0">限流</h2>
+      <div class="note">放行即占用额度（发信失败也计数，防用失败刷探测）。</div>
+      <div style="margin-top:12px"><button id="btn-reset" class="ghost">重置今日限流计数</button></div>
+      <div id="reset-msg"></div>
+    </section>
+
+  </div>
+</div>
+<script>
+(function(){
+  var token=null;
+  function el(id){return document.getElementById(id)}
+  function msg(box,cls,text){el(box).innerHTML='<div class="msg '+cls+'">'+text+'</div>'}
+  function authHeaders(){return token?{Authorization:"Bearer "+token}:{}}
+  function json(p){return fetch(p,{headers:Object.assign({"Content-Type":"application/json"},authHeaders())})}
+  function post(p,b){return fetch(p,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),body:JSON.stringify(b)})}
+
+  el("btn-login").onclick=function(){
+    var pw=el("pw").value;
+    fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})})
+      .then(function(r){return r.json().then(function(d){return {s:r.status,d:d}})})
+      .then(function(x){
+        if(x.d.ok){token=x.d.token;el("login-view").classList.add("hidden");el("app-view").classList.remove("hidden");loadStatus()}
+        else{msg("login-msg","bad",x.d.reason||"登录失败")}
+      }).catch(function(){msg("login-msg","bad","网络异常")});
+  };
+
+  function loadStatus(){
+    json("/api/admin/status").then(function(r){return r.json()}).then(function(d){
+      if(!d.enabled){msg("login-msg","bad","后台未启用（ADMIN_PASSWORD 未设置）");return}
+      el("st-enabled").textContent=d.enabled?"是":"否";
+      el("st-ready").textContent=d.mail_ready?"是":"否";
+      var c=d.config||{};
+      el("smtp_host").value=c.smtp_host||"";
+      el("smtp_port").value=c.smtp_port||"";
+      el("smtp_security").value=c.smtp_security||"ssl";
+      el("smtp_user").value=c.smtp_user_masked||"";
+      el("smtp_password").value=c.smtp_password==="****"?"****":"";
+      el("from_addr").value=c.from_addr||"";
+      el("from_name").value=c.from_name||"";
+      var rate=d.rate||{};
+      el("rate").innerHTML="今日已发：<b>"+rate.today_total+"</b> / "+rate.daily_limit+
+        "　·　按 IP 上限："+rate.ip_daily_limit+"　·　按收件上限："+rate.to_daily_limit;
+    }).catch(function(){});
+  }
+
+  el("btn-save").onclick=function(){
+    var body={};
+    ["smtp_host","smtp_port","smtp_security","smtp_user","from_addr","from_name"].forEach(function(k){
+      body[k]=el(k).value;
+    });
+    var pw=el("smtp_password").value;
+    // **** 保留原密码；空串清空；其它当新密码。store.save_settings 内部会再判一次。
+    if(pw&&pw!=="****") body.smtp_password=pw;
+    else if(pw==="") body.smtp_password="";
+    post("/api/admin/config",body).then(function(r){return r.json()}).then(function(d){
+      if(d.ok){msg("save-msg","ok","已保存");loadStatus()}
+      else{msg("save-msg","bad",d.reason||"保存失败")}
+    }).catch(function(){msg("save-msg","bad","网络异常")});
+  };
+
+  el("btn-test").onclick=function(){
+    var to=el("test_to").value;
+    msg("test-msg","","正在发送…");
+    post("/api/admin/test-mail",{to:to}).then(function(r){return r.json()}).then(function(d){
+      if(d.ok)msg("test-msg","ok","已发出，去收件箱看一下（可能进垃圾箱）");
+      else msg("test-msg","bad",d.reason||"发送失败");
+    }).catch(function(){msg("test-msg","bad","网络异常")});
+  };
+
+  el("btn-reset").onclick=function(){
+    post("/api/admin/rate/reset",{}).then(function(r){return r.json()}).then(function(d){
+      if(d.ok){msg("reset-msg","ok","已重置");loadStatus()}
+      else msg("reset-msg","bad","失败");
+    }).catch(function(){msg("reset-msg","bad","网络异常")});
+  };
+})();
+</script>
+</body>
+</html>

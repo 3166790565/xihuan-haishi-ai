@@ -1,0 +1,4 @@
+fastapi==0.141.1
+uvicorn[standard]==0.49.0
+# pydantic / starlette / jinja2 / python-multipart 都是 fastapi/uvicorn 的传递依赖，
+# 这里只钉住直接被 app 代码 import 的两个。邮件走 stdlib smtplib，无需额外包。

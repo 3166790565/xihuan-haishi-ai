@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>·</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main class="shell">
+
+  <!-- S0 锁定页 -->
+  <section id="view-s0" class="view" aria-labelledby="s0-h">
+    <div class="view-inner" id="s0-inner"></div>
+  </section>
+
+  <!-- S1 逐题 -->
+  <section id="view-s1" class="view" hidden aria-live="polite">
+    <div class="view-inner" id="s1-inner"></div>
+  </section>
+
+  <!-- S2 结果 -->
+  <section id="view-s2" class="view" hidden>
+    <div class="view-inner" id="s2-inner"></div>
+  </section>
+
+</main>
+
+<script src="data/questions.js"></script>
+<script src="data/interpretations.js?v=1"></script>
+<script src="scoring.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
