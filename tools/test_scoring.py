@@ -6,7 +6,7 @@
   C. 本文件里的 oracle    （独立按自然语言定义重算的第三份实现，不 import A/B）
 
 分工按性质划开，不是偷懒：
-  - 设计断言（typeKey / verdict）来自 博客.mp4 的八分法，人可能在设计层搞错，
+  - 设计断言（typeKey / verdict）来自 绳师48号某期博客 的八分法，人可能在设计层搞错，
     所以由 golden-vectors.json 逐条人工钉死，A/B/C 都必须服从它。
   - 机械字段（borderlineDims / keyQuestionIds / confidence）是纯算术，
     人工推 9 次翻题只会出错、不会更有原则（第一版就在 V01/V04 上算错过），
